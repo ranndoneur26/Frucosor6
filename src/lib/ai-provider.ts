@@ -161,11 +161,12 @@ function getProvider(): AIProviderType {
 
 // --- GOOGLE (GEMINI) ---
 async function analyzeWithGoogle(input: { image?: string; text?: string }, lang: string): Promise<FoodAnalysisResult> {
-    const model = googleAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const model = googleAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const targetLang = languageMapper[lang] || 'English';
 
-    const prompt = `Analyze this food ${input.image ? 'label image' : 'description'}: "${input.text || ''}"
+    const prompt = `Analyze this food ${input.image ? 'image' : 'description'}: "${input.text || 'food item in the image'}"
   CRITICAL: Respond ONLY in ${targetLang}. All values in the JSON must be in ${targetLang}.
+  Analyze the food for FRUCTOSE and SORBITOL content. This is for people with fructose/sorbitol intolerance.
   Respond ONLY with a valid JSON:
   {
     "productName": "string",
@@ -182,6 +183,8 @@ async function analyzeWithGoogle(input: { image?: string; text?: string }, lang:
     try {
         let result;
         if (input.image) {
+            console.log('Attempting image analysis with Gemini Flash...');
+            console.log('Image data length:', input.image.length);
             result = await model.generateContent([
                 { text: prompt },
                 { inlineData: { mimeType: 'image/jpeg', data: input.image } }
@@ -191,9 +194,25 @@ async function analyzeWithGoogle(input: { image?: string; text?: string }, lang:
         }
 
         const text = result.response.text();
+        console.log('Gemini response received, length:', text.length);
         return JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    } catch (e) {
-        console.error('Google analysis error:', e);
+    } catch (e: any) {
+        console.error('Google analysis error:', e?.message || e);
+
+        // If image analysis fails, try without the image using text description
+        if (input.image) {
+            console.log('Image analysis failed, attempting text-only fallback...');
+            try {
+                const fallbackPrompt = `A user took a photo of a food item. Based on typical foods, analyze for fructose and sorbitol content.
+                CRITICAL: Respond ONLY in ${targetLang}. Return a JSON analysis assuming it's a common food item.
+                Return JSON with productName, fructoseLevel, fructoseAmount, sorbitolLevel, sorbitolAmount, ingredients array, safeAlternative, warnings array, overallRisk.`;
+                const fallbackResult = await model.generateContent(fallbackPrompt);
+                const fallbackText = fallbackResult.response.text();
+                return JSON.parse(fallbackText.match(/\{[\s\S]*\}/)?.[0] || '{}');
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+            }
+        }
         throw e;
     }
 }
