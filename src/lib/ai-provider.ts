@@ -67,6 +67,12 @@ interface Meal {
 export async function unifiedAnalyze(input: { image?: string; text?: string }, lang: string = 'en'): Promise<FoodAnalysisResult> {
     const provider = getProvider();
 
+    // IMPORTANT: For image analysis, always use Google (Gemini) as Perplexity doesn't support images
+    if (input.image && GOOGLE_API_KEY) {
+        console.log('Image detected, using Google Gemini for multimodal analysis');
+        return analyzeWithGoogle(input, lang);
+    }
+
     if (provider === 'openai') {
         return analyzeWithOpenAI(input, lang);
     } else if (provider === 'anthropic') {
