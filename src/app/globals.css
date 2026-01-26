@@ -1,26 +1,59 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/container-queries";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-primary: #16a34a;
+  --color-background-light: #f6f8f6;
+  --color-background-dark: #102216;
+  --color-warning-red: #ff4b2b;
+  --color-warning-yellow: #f9d423;
+  --color-mondrian-black: #000000;
+  --color-mondrian-red: #E74C3C;
+  --color-mondrian-blue: #3498DB;
+  --color-mondrian-yellow: #F1C40F;
+
+  --font-display: var(--font-display);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    font-family: var(--font-display), sans-serif;
+    min-height: max(884px, 100dvh);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #102216;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #16a34a;
+    border-radius: 10px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .mondrian-border {
+    border: 4px solid #000000;
+  }
+
+  .dark .mondrian-border-alt {
+    border: 2px solid #16a34a;
+  }
+
+  .mondrian-border-alt {
+    border: 2px solid #000;
+  }
+
+  .mondrian-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    background-color: #000000;
+  }
 }

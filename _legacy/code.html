@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>FRUCSOR - Fructose & Sorbitol Scanner</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/history@5/umd/history.development.js"></script>
+    <script src="https://unpkg.com/react-router@6.3.0/umd/react-router.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2bee6c",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "warning-red": "#ff4b2b",
+                        "warning-yellow": "#f9d423",
+                        "mondrian-black": "#000000",
+                        "mondrian-red": "#E74C3C",
+                        "mondrian-blue": "#3498DB",
+                        "mondrian-yellow": "#F1C40F",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderWidth: {
+                        '6': '6px',
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .mondrian-border {
+            border: 4px solid #000000;
+        }
+        .dark .mondrian-border-alt {
+            border: 2px solid #2bee6c;
+        }
+        .mondrian-border-alt {
+            border: 2px solid #000;
+        }
+        .mondrian-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            background-color: #000000;
+        }
+        /* Custom scrollbar for better look in dark mode */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #102216;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2bee6c;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-white font-display">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+        const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
+
+        // --- Shared Components ---
+
+        const BottomNav = () => {
+            const navigate = useNavigate();
+            const location = useLocation();
+            const isActive = (path) => location.pathname === path;
+
+            return (
+                <div className="fixed bottom-0 left-0 right-0 border-t-4 border-black dark:border-zinc-800 bg-white dark:bg-background-dark px-8 py-4 flex justify-between items-center z-50">
+                    <button onClick={() => navigate('/')} className={`material-symbols-outlined font-bold ${isActive('/') ? 'text-primary' : 'text-zinc-400'}`}>home</button>
+                    <button onClick={() => navigate('/analysis')} className={`material-symbols-outlined ${isActive('/analysis') ? 'text-primary' : 'text-zinc-400'}`}>history</button>
+                    <button className="material-symbols-outlined text-zinc-400">favorite</button>
+                    <button onClick={() => navigate('/planner')} className={`material-symbols-outlined ${isActive('/planner') ? 'text-primary' : 'text-zinc-400'}`}>calendar_month</button>
+                </div>
+            );
+        };
+
+        // --- Screens ---
+
+        const HomeScreen = () => {
+            const navigate = useNavigate();
+
+            return (
+                <div className="flex flex-col min-h-screen pb-24">
+                    <div className="flex items-center justify-between p-4 pt-6">
+                        <h1 className="text-3xl font-bold tracking-tighter text-black dark:text-white uppercase">FRUCSOR</h1>
+                        <div className="bg-primary p-2 rounded-lg">
+                            <span className="material-symbols-outlined text-background-dark">nutrition</span>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 p-4 grid grid-cols-6 grid-rows-12 gap-3 min-h-[600px]">
+                        <div className="col-span-6 row-span-2 bg-white dark:bg-[#1a2e21] rounded-xl mondrian-border flex items-center px-4">
+                            <span className="material-symbols-outlined text-[#9db9a6] mr-3">search</span>
+                            <input className="bg-transparent border-none focus:ring-0 text-black dark:text-white placeholder-[#9db9a6] w-full font-medium text-lg" placeholder="Search food / Busca un aliment..." type="text"/>
+                        </div>
+
+                        <div 
+                            onClick={() => navigate('/analysis')}
+                            className="col-span-4 row-span-5 bg-mondrian-red rounded-xl mondrian-border p-5 flex flex-col justify-between group active:scale-95 transition-transform overflow-hidden relative cursor-pointer"
+                        >
+                            <div className="z-10 text-white">
+                                <h2 className="text-3xl font-bold leading-none mb-1">SCAN<br/>LABEL</h2>
+                                <p className="text-xs font-bold opacity-80 uppercase tracking-widest">Fructose & Sorbitol</p>
+                            </div>
+                            <div className="self-end z-10 text-white">
+                                <span className="material-symbols-outlined text-6xl">photo_camera</span>
+                            </div>
+                            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-black/10 rounded-full"></div>
+                        </div>
+
+                        <div className="col-span-2 row-span-2 bg-mondrian-yellow rounded-xl mondrian-border flex items-center justify-center">
+                            <span className="material-symbols-outlined text-black text-4xl">barcode_scanner</span>
+                        </div>
+
+                        <div className="col-span-2 row-span-3 bg-white dark:bg-zinc-800 rounded-xl mondrian-border p-4 flex flex-col justify-center items-center text-center">
+                            <span className="text-black dark:text-white font-bold text-xs uppercase tracking-tighter leading-tight">Zero<br/>Tolerance<br/>Mode</span>
+                            <div className="mt-2 w-full h-1 bg-primary"></div>
+                        </div>
+
+                        <div 
+                            onClick={() => navigate('/planner')}
+                            className="col-span-3 row-span-4 bg-mondrian-blue rounded-xl mondrian-border p-5 flex flex-col justify-between active:scale-95 transition-transform cursor-pointer text-white"
+                        >
+                            <span className="material-symbols-outlined text-4xl">calendar_month</span>
+                            <h3 className="text-xl font-bold leading-tight">WEEKLY<br/>PLANNER</h3>
+                        </div>
+
+                        <div className="col-span-3 row-span-2 bg-white dark:bg-zinc-200 rounded-xl mondrian-border p-1 flex items-center justify-between text-black overflow-hidden">
+                            <button className="flex-1 h-full flex items-center justify-center font-bold text-xs hover:bg-black/5 rounded">CAT</button>
+                            <div className="w-[2px] h-1/2 bg-black/10"></div>
+                            <button className="flex-1 h-full flex items-center justify-center font-bold text-xs bg-black text-white rounded">ENG</button>
+                            <div className="w-[2px] h-1/2 bg-black/10"></div>
+                            <button className="flex-1 h-full flex items-center justify-center font-bold text-xs hover:bg-black/5 rounded">ESP</button>
+                        </div>
+
+                        <div className="col-span-3 row-span-2 bg-primary rounded-xl mondrian-border p-4 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-background-dark font-bold">check_circle</span>
+                            <span className="text-background-dark font-extrabold text-sm uppercase">Safe Profile<br/>Active</span>
+                        </div>
+                    </div>
+
+                    <div className="px-4 pb-4">
+                        <div className="rounded-xl overflow-hidden mondrian-border h-24 bg-cover bg-center flex items-end p-3 relative" style={{backgroundImage: "linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuCTKKvxpP2chrMo_VsJOJfvzi0RpL87Fl072WBeBSDB-hpCW2vo47nNNRbASMgok4uoxuoAdQqfxwxBUftIjs9Vu_cWdzahsVx9uchfF_u-6A10b9ouoLHDzl07vas9MFk5Bu84-q-1TL9MV8WFWIKleayP7DzA4biuquqB2bMekLhRWVBxciRs-MQjCyiHdI03K8PErjuReSG1187zeIe-TzOVp0ZfmzCKmjYNaxnW0dknWlHO0qY_-ZYvMLzoPHlql9odkaKjPBc')"}}>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">Market Insights</p>
+                        </div>
+                    </div>
+
+                    <footer className="p-6 text-center">
+                        <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">
+                            app by <span className="text-zinc-400 dark:text-zinc-300">marcxicola.com</span>
+                        </p>
+                    </footer>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        const AnalysisScreen = () => {
+            const navigate = useNavigate();
+
+            return (
+                <div className="min-h-screen pb-24">
+                    <div className="relative flex flex-col w-full bg-mondrian-black border-b-4 border-black">
+                        <div className="flex items-center p-4 justify-between bg-background-light dark:bg-background-dark">
+                            <button onClick={() => navigate(-1)} className="text-black dark:text-white flex size-12 shrink-0 items-center">
+                                <span className="material-symbols-outlined">arrow_back</span>
+                            </button>
+                            <h2 className="text-black dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center uppercase tracking-widest">Analysis Result</h2>
+                            <div className="flex w-12 items-center justify-end">
+                                <button className="flex items-center justify-center h-12 bg-transparent text-black dark:text-white">
+                                    <span className="material-symbols-outlined">share</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="p-4 space-y-1">
+                        <div className="mondrian-border bg-white dark:bg-zinc-900 p-6 mb-1">
+                            <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-1">Product Name</p>
+                            <h1 className="text-black dark:text-white text-4xl font-bold leading-none uppercase break-words">Apple Juice Concentrate</h1>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-1">
+                            <div className="col-span-7 mondrian-border bg-warning-red p-4 flex flex-col justify-between min-h-[160px]">
+                                <div>
+                                    <span className="material-symbols-outlined text-black text-4xl mb-2">warning</span>
+                                    <h2 className="text-black text-2xl font-bold leading-tight uppercase">High Fructose</h2>
+                                </div>
+                                <p className="text-black/80 font-medium text-sm">12g per 100ml detected</p>
+                            </div>
+
+                            <div className="col-span-5 mondrian-border bg-warning-yellow p-4 flex flex-col justify-between min-h-[160px]">
+                                <div>
+                                    <span className="material-symbols-outlined text-black text-3xl mb-2">error</span>
+                                    <h2 className="text-black text-lg font-bold leading-tight uppercase">Moderate Sorbitol</h2>
+                                </div>
+                                <p className="text-black/70 font-medium text-xs">2.5g per 100ml</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-1 mt-1">
+                            <div className="col-span-12 md:col-span-8 mondrian-border bg-white dark:bg-zinc-900 p-4">
+                                <h3 className="text-black dark:text-white text-xl font-bold uppercase mb-4 border-b-2 border-black dark:border-white pb-2 inline-block">Ingredients</h3>
+                                <ul className="space-y-2 text-zinc-600 dark:text-zinc-400">
+                                    <li className="flex items-center gap-2">
+                                        <span className="size-2 bg-warning-red rounded-full"></span>
+                                        <span className="font-bold text-black dark:text-white">Concentrated Apple Juice</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="size-2 bg-primary rounded-full"></span>
+                                        <span>Water</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="size-2 bg-warning-yellow rounded-full"></span>
+                                        <span className="font-bold text-black dark:text-white">Natural Flavors</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="size-2 bg-primary rounded-full"></span>
+                                        <span>Ascorbic Acid (Vitamin C)</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="size-2 bg-primary rounded-full"></span>
+                                        <span>Citric Acid</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="mondrian-border bg-primary p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-black text-xs font-bold uppercase">Safe Alternative</p>
+                                <p className="text-black text-lg font-bold">Diluted Lemon Water</p>
+                            </div>
+                            <span className="material-symbols-outlined text-black text-3xl">check_circle</span>
+                        </div>
+
+                        <div className="mondrian-border overflow-hidden h-48 relative">
+                            <div className="absolute inset-0 bg-center bg-cover" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAU9BfFZUCG00W63QHxnjqYVoxHh0vWifIMRnrH5AgGlgJsqoG8V031FLnDNk9Gr4CYjY7menlFbpg3RgaBtRQnl3jHh-clBNZeFchlgA7_yEayPWWKDxYDJAS1NAsxUCHndxaluNAr7kL-nKcW6-1bsAw5Z3vZX8AYerHerYOJ6cNN9shYUWclKhk_NU94Uxxn0fl6OnrALiHGNuCEr0LQSA8LdIJ88gNu0R3PyejKvTDrKEpr9sWXy6bCJmfasKq3ADkBUjJFt9E")'}}></div>
+                            <div className="absolute inset-0 bg-black/20"></div>
+                        </div>
+
+                        <div className="py-4">
+                            <button className="w-full mondrian-border bg-primary text-black h-16 flex items-center justify-center gap-3 font-bold text-xl uppercase tracking-tighter hover:scale-[0.98] transition-transform">
+                                <span className="material-symbols-outlined font-bold">download</span>
+                                Download Results
+                            </button>
+                        </div>
+                    </main>
+
+                    <footer className="p-8 text-center">
+                        <p className="text-zinc-500 text-sm font-medium tracking-widest uppercase">
+                            app by <a className="text-primary hover:underline" href="https://marcxicola.com">marcxicola.com</a>
+                        </p>
+                    </footer>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        const PlannerScreen = () => {
+            const navigate = useNavigate();
+
+            return (
+                <div className="min-h-screen pb-24">
+                    <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/20">
+                        <div className="flex items-center p-4 pb-2 justify-between">
+                            <div className="text-primary flex size-12 shrink-0 items-center justify-start">
+                                <span className="material-symbols-outlined text-3xl">calendar_view_week</span>
+                            </div>
+                            <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center font-display">Weekly Planner</h2>
+                            <div className="flex w-12 items-center justify-end">
+                                <button className="flex cursor-pointer items-center justify-center rounded-lg h-12 bg-transparent text-primary">
+                                    <span className="material-symbols-outlined text-2xl">settings</span>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="p-4">
+                        <div className="mb-4">
+                            <h3 className="text-slate-900 dark:text-white text-2xl font-bold leading-tight tracking-tight font-display">Your Safe Menu</h3>
+                            <p className="text-slate-500 dark:text-primary/70 text-sm">Tailored for Fructose & Sorbitol sensitivity</p>
+                        </div>
+
+                        <div className="grid grid-cols-6 grid-rows-6 gap-2 h-[600px]">
+                            <div className="col-span-4 row-span-2 border-2 border-slate-900 dark:border-primary p-3 rounded-lg flex flex-col justify-between bg-primary/10">
+                                <div className="flex justify-between items-start">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-primary">Mon</span>
+                                    <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold truncate">Quinoa & Berries</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-primary/60">Fructose Safe</p>
+                                </div>
+                            </div>
+
+                            <div className="col-span-2 row-span-3 border-2 border-slate-900 dark:border-slate-700 p-3 rounded-lg flex flex-col justify-between">
+                                <span className="text-xs font-bold uppercase tracking-widest opacity-50">Tue</span>
+                                <div className="space-y-2">
+                                    <div className="size-6 bg-primary rounded-full flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-background-dark text-xs">restaurant</span>
+                                    </div>
+                                    <p className="text-xs font-bold leading-tight">Steamed Fish & Zucchini</p>
+                                </div>
+                            </div>
+
+                            <div className="col-span-3 row-span-2 border-2 border-slate-900 dark:border-slate-700 p-3 rounded-lg flex flex-col justify-between">
+                                <span className="text-xs font-bold uppercase tracking-widest opacity-50">Wed</span>
+                                <p className="text-xs font-medium">Chicken Breast with Rice Noodles</p>
+                            </div>
+
+                            <div className="col-span-1 row-span-1 border-2 border-slate-900 dark:border-primary bg-primary p-2 rounded-lg flex items-center justify-center">
+                                <span className="text-background-dark font-bold text-xs">Thu</span>
+                            </div>
+
+                            <div className="col-span-4 row-span-2 border-2 border-slate-900 dark:border-slate-700 p-3 rounded-lg flex flex-col gap-1">
+                                <span className="text-xs font-bold uppercase tracking-widest opacity-50">Fri</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="size-8 bg-slate-800 rounded flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-primary text-sm">egg</span>
+                                    </div>
+                                    <p className="text-sm font-medium">Omelette with Herbs</p>
+                                </div>
+                            </div>
+
+                            <div className="col-span-2 row-span-3 border-2 border-slate-900 dark:border-primary/40 p-3 rounded-lg flex flex-col justify-between bg-primary/5">
+                                <span className="text-xs font-bold uppercase tracking-widest text-primary/80">Sat</span>
+                                <p className="text-xs font-bold leading-tight">Low-Fructose Beef Stir-fry</p>
+                                <span className="material-symbols-outlined text-primary text-xl">star</span>
+                            </div>
+
+                            <div className="col-span-4 row-span-1 border-2 border-primary bg-primary text-background-dark p-3 rounded-lg flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined font-bold">bolt</span>
+                                    <span className="font-bold text-sm font-display">Ask AI for Sunday Menu</span>
+                                </div>
+                                <span className="material-symbols-outlined">arrow_forward_ios</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-8">
+                            <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight px-0 pb-4 font-display">Popular Safe Options</h3>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-4 bg-white/5 dark:bg-primary/5 border border-slate-200 dark:border-primary/10 px-4 min-h-[72px] py-2 justify-between rounded-xl">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-primary flex items-center justify-center rounded-lg bg-primary/20 shrink-0 size-12">
+                                            <span className="material-symbols-outlined">rice_bowl</span>
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <p className="text-slate-900 dark:text-white text-base font-medium leading-normal line-clamp-1">Quinoa Porridge</p>
+                                            <p className="text-slate-500 dark:text-primary/60 text-sm font-normal leading-normal line-clamp-2">Breakfast - Fructose Safe</p>
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0">
+                                        <div className="text-primary flex size-7 items-center justify-center">
+                                            <span className="material-symbols-outlined">chevron_right</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 bg-white/5 dark:bg-primary/5 border border-slate-200 dark:border-primary/10 px-4 min-h-[72px] py-2 justify-between rounded-xl">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-primary flex items-center justify-center rounded-lg bg-primary/20 shrink-0 size-12">
+                                            <span className="material-symbols-outlined">skillet</span>
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <p className="text-slate-900 dark:text-white text-base font-medium leading-normal line-clamp-1">Grilled Chicken & Rice</p>
+                                            <p className="text-slate-500 dark:text-primary/60 text-sm font-normal leading-normal line-clamp-2">Lunch - Sorbitol Free</p>
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0">
+                                        <div className="text-primary flex size-7 items-center justify-center">
+                                            <span className="material-symbols-outlined">chevron_right</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    <div className="fixed bottom-24 right-6 z-50">
+                        <button className="bg-primary text-background-dark size-14 rounded-full shadow-lg shadow-primary/20 flex items-center justify-center hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-3xl">chat_bubble</span>
+                        </button>
+                    </div>
+
+                    <footer className="p-8 text-center border-t border-slate-200 dark:border-primary/10">
+                        <p className="text-xs text-slate-400 dark:text-primary/40 uppercase tracking-[0.2em] font-medium">app by marcxicola.com</p>
+                    </footer>
+                    <BottomNav />
+                </div>
+            );
+        };
+
+        const App = () => {
+            return (
+                <MemoryRouter>
+                    <Routes>
+                        <Route path="/" element={<HomeScreen />} />
+                        <Route path="/analysis" element={<AnalysisScreen />} />
+                        <Route path="/planner" element={<PlannerScreen />} />
+                    </Routes>
+                </MemoryRouter>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
