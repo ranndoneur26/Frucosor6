@@ -156,13 +156,17 @@ export default function ScanPage() {
                 {/* Action Buttons */}
                 {!capturedImage && !isCameraActive && (
                     <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={startCamera}
-                            className="mondrian-border bg-mondrian-red text-white p-4 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform"
-                        >
+                        <label className="mondrian-border bg-mondrian-red text-white p-4 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform cursor-pointer">
                             <span className="material-symbols-outlined text-3xl">photo_camera</span>
                             <span className="font-bold text-sm uppercase">{t('analysis.takePhoto')}</span>
-                        </button>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                            />
+                        </label>
 
                         <label className="mondrian-border bg-mondrian-blue text-white p-4 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform cursor-pointer">
                             <span className="material-symbols-outlined text-3xl">upload</span>

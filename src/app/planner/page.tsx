@@ -80,7 +80,10 @@ export default function Planner() {
             const a = document.createElement('a');
             a.href = url;
             a.download = `FRUCSOR_Plan_${menuPlan.title.replace(/\s+/g, '_')}.txt`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (err) {
             console.error('Download error:', err);
@@ -126,7 +129,7 @@ export default function Planner() {
                     >
                         <span className="material-symbols-outlined">arrow_back</span>
                     </button>
-                    <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center font-display">
+                    <h2 className="text-slate-900 dark:text-white text-base sm:text-lg font-bold leading-tight tracking-tight flex-1 text-center font-display truncate">
                         {t('planner.title')}
                     </h2>
                     <div className="w-12"></div>

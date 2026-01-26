@@ -159,7 +159,10 @@ export default function Analysis() {
             const a = document.createElement('a');
             a.href = url;
             a.download = `FRUCSOR_Analisi_${data.productName.replace(/\s+/g, '_')}.txt`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (err) {
             console.error('Download error:', err);
