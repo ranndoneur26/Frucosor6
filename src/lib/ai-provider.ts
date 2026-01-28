@@ -67,10 +67,15 @@ interface Meal {
 export async function unifiedAnalyze(input: { image?: string; text?: string }, lang: string = 'en'): Promise<FoodAnalysisResult> {
     const provider = getProvider();
 
-    // IMPORTANT: For image analysis, use OpenAI GPT-4o as Google has quota exceeded
-    if (input.image && OPENAI_API_KEY) {
-        console.log('Image detected, using OpenAI GPT-4o for multimodal analysis');
-        return analyzeWithOpenAI(input, lang);
+    // Use Perplexity if selected or if OpenAI is missing but Perplexity key exists (for images too)
+    if (input.image) {
+        if (provider === 'perplexity') {
+            return analyzeWithPerplexity(input, lang);
+        }
+        // Fallback for image: Try OpenAI, then Perplexity, then Anthropic
+        if (OPENAI_API_KEY) return analyzeWithOpenAI(input, lang);
+        if (PERPLEXITY_API_KEY) return analyzeWithPerplexity(input, lang);
+        if (ANTHROPIC_API_KEY) return analyzeWithAnthropic(input, lang);
     }
 
     if (provider === 'openai') {
@@ -302,31 +307,47 @@ async function generateMenuWithOpenAI(userRequest: string, lang: string): Promis
 
 // --- PERPLEXITY (SONAR) ---
 async function analyzeWithPerplexity(input: { image?: string; text?: string }, lang: string): Promise<FoodAnalysisResult> {
-    // Perplexity typically doesn't support images in their API yet, so we fallback to text
     const targetLang = languageMapper[lang] || 'English';
+
+    const messages: any[] = [
+        {
+            role: "system",
+            content: `You are a food analysis expert for fructose and sorbitol intolerance.
+            CRITICAL: Respond ONLY in ${targetLang}.
+            Return ONLY a valid JSON object.
+            Schema:
+            {
+                "productName": "string",
+                "fructoseLevel": "high"|"moderate"|"low"|"none",
+                "fructoseAmount": "string",
+                "sorbitolLevel": "high"|"moderate"|"low"|"none",
+                "sorbitolAmount": "string",
+                "ingredients": [{"name": "string", "risk": "high"|"moderate"|"safe"}],
+                "safeAlternative": "string",
+                "warnings": ["string"],
+                "overallRisk": "high"|"moderate"|"low"|"safe"
+            }`
+        }
+    ];
+
+    if (input.image) {
+        messages.push({
+            role: "user",
+            content: [
+                { type: "text", text: `Analyze this food image: ${input.text || "Start analysis"}. Return ONLY JSON in ${targetLang}.` },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${input.image}` } }
+            ]
+        });
+    } else {
+        messages.push({
+            role: "user",
+            content: `Analyze this food: ${input.text || "Food labels info"}. Return ONLY JSON in ${targetLang}.`
+        });
+    }
+
     const response = await perplexity.chat.completions.create({
         model: "sonar",
-        messages: [
-            {
-                role: "system",
-                content: `You are a food analysis expert for fructose and sorbitol intolerance.
-                CRITICAL: Respond ONLY in ${targetLang}.
-                Return ONLY a valid JSON object.
-                Schema:
-                {
-                  "productName": "string",
-                  "fructoseLevel": "high"|"moderate"|"low"|"none",
-                  "fructoseAmount": "string",
-                  "sorbitolLevel": "high"|"moderate"|"low"|"none",
-                  "sorbitolAmount": "string",
-                  "ingredients": [{"name": "string", "risk": "high"|"moderate"|"safe"}],
-                  "safeAlternative": "string",
-                  "warnings": ["string"],
-                  "overallRisk": "high"|"moderate"|"low"|"safe"
-                }`
-            },
-            { role: "user", content: `Analyze this food: ${input.text || "Food labels info"}. Return ONLY JSON in ${targetLang}.` }
-        ]
+        messages: messages as any
     });
 
     const text = response.choices[0].message.content || '{}';
