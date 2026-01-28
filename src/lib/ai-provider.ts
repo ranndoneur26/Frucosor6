@@ -69,12 +69,37 @@ export async function unifiedAnalyze(input: { image?: string; text?: string }, l
 
     // Use Perplexity if selected or if OpenAI is missing but Perplexity key exists (for images too)
     if (input.image) {
-        if (provider === 'perplexity') {
-            return analyzeWithPerplexity(input, lang);
+        try {
+            if (provider === 'perplexity') {
+                return await analyzeWithPerplexity(input, lang);
+            }
+        } catch (e) {
+            console.error('Perplexity image analysis failed (likely unsupported), falling back:', e);
+            // Fallthrough to others
         }
-        // Fallback for image: Try OpenAI, then Perplexity, then Anthropic
-        if (OPENAI_API_KEY) return analyzeWithOpenAI(input, lang);
-        if (PERPLEXITY_API_KEY) return analyzeWithPerplexity(input, lang);
+
+        // Fallback for image: Try OpenAI, then Google (Flash supports images), then Anthropic
+        if (OPENAI_API_KEY) {
+            try {
+                return await analyzeWithOpenAI(input, lang);
+            } catch (e) { console.error('OpenAI image analysis failed:', e); }
+        }
+
+        if (GOOGLE_API_KEY) {
+            try {
+                return await analyzeWithGoogle(input, lang);
+            } catch (e) { console.error('Google image analysis failed:', e); }
+        }
+
+        if (PERPLEXITY_API_KEY) {
+            // Retry perplexity if we haven't already tried it as primary
+            if (provider !== 'perplexity') {
+                try {
+                    return await analyzeWithPerplexity(input, lang);
+                } catch (e) { console.error('Perplexity image analysis failed:', e); }
+            }
+        }
+
         if (ANTHROPIC_API_KEY) return analyzeWithAnthropic(input, lang);
     }
 

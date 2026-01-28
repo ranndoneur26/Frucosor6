@@ -43,12 +43,26 @@ export default function ScanPage() {
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current;
             const canvas = canvasRef.current;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            // Resize to max 800px to avoid Vercel 4.5MB payload limit
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+            const maxDim = 800;
+
+            if (width > height && width > maxDim) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+            } else if (height > width && height > maxDim) {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                ctx.drawImage(video, 0, 0);
-                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                ctx.drawImage(video, 0, 0, width, height);
+                const imageData = canvas.toDataURL('image/jpeg', 0.7); // Slightly lower quality for compression
                 setCapturedImage(imageData);
                 stopCamera();
             }
@@ -77,16 +91,19 @@ export default function ScanPage() {
                 body: JSON.stringify({ image: capturedImage, lang: language }),
             });
 
-            if (!response.ok) throw new Error('Analysis failed');
-
             const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Analysis failed');
+            }
 
             // Store result in sessionStorage and navigate to analysis page
             sessionStorage.setItem('analysisResult', JSON.stringify(result));
             router.push('/analysis?fromScan=true');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Analysis error:', error);
-            alert('Could not analyze the image. Please try again.');
+            // Show the specific error message from the API if available
+            alert(`Error: ${error.message || 'Could not analyze the image. Please try again.'}`);
         } finally {
             setIsAnalyzing(false);
         }
