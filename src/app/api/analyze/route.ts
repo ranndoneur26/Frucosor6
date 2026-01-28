@@ -20,7 +20,26 @@ export async function POST(request: NextRequest) {
         }
 
         // Robustly extract base64 data handling various Data URI formats
-        const base64Data = image ? (image.includes(',') ? image.split(',')[1] : image) : undefined;
+        let base64Data = undefined;
+        if (image) {
+            // 1. Remove Data URI prefix if present (e.g., "data:image/jpeg;base64,")
+            if (image.includes(',')) {
+                base64Data = image.split(',')[1];
+            } else {
+                base64Data = image;
+            }
+
+            // 2. Remove all whitespace (newlines, spaces, tabs)
+            base64Data = base64Data.replace(/\s/g, '');
+
+            // 3. Fix padding (base64 length must be multiple of 4)
+            const padding = base64Data.length % 4;
+            if (padding > 0) {
+                base64Data += '='.repeat(4 - padding);
+                console.log(`Added ${4 - padding} padding characters`);
+            }
+        }
+
         console.log('Base64 data length after cleanup:', base64Data?.length || 0);
 
         const result = await unifiedAnalyze({ image: base64Data, text }, lang);

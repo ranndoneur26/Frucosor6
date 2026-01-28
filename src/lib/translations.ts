@@ -107,6 +107,21 @@ export const translations: Record<Language, Record<string, string>> = {
         'common.error': 'Error',
         'common.success': 'Éxito',
         'common.logout': 'Cerrar Sesión',
+        // Error
+        'error.404.title': 'Página No Encontrada',
+        'error.404.message': 'El recurso solicitado no está disponible.',
+        'error.return': 'Volver al Inicio',
+
+        // Audit
+        'audit.title': 'Dashboard de Auditoría de Seguridad',
+        'audit.subtitle': 'Solo Uso Interno • Personal Autorizado',
+        'audit.score': 'Cumplimiento Global de Seguridad',
+        'audit.blocked': 'Despliegue Bloqueado: Riesgos Detectados',
+        'audit.secure': 'Sistema Seguro: Listo para Despliegue',
+        'audit.params': 'Parámetros de Seguridad',
+        'audit.health': 'Salud del Sistema',
+        'audit.logs': 'Registros de Auditoría',
+        'audit.noLogs': 'No hay registros todavía.',
     },
 
     // CATALÀ
@@ -212,6 +227,21 @@ export const translations: Record<Language, Record<string, string>> = {
         'common.error': 'Error',
         'common.success': 'Èxit',
         'common.logout': 'Tancar Sessió',
+        // Error
+        'error.404.title': 'Pàgina No Trobada',
+        'error.404.message': 'El recurs sol·licitat no està disponible.',
+        'error.return': 'Tornar a l\'Inici',
+
+        // Audit
+        'audit.title': 'Tauler d\'Auditoria de Seguretat',
+        'audit.subtitle': 'Només Ús Intern • Personal Autoritzat',
+        'audit.score': 'Compliment Global de Seguretat',
+        'audit.blocked': 'Desplegament Bloquejat: Riscos Detectats',
+        'audit.secure': 'Sistema Segur: Llest per Desplegar',
+        'audit.params': 'Paràmetres de Seguretat',
+        'audit.health': 'Salut del Sistema',
+        'audit.logs': 'Registres d\'Auditoria',
+        'audit.noLogs': 'No hi ha registres encara.',
     },
 
     // ENGLISH
@@ -317,6 +347,21 @@ export const translations: Record<Language, Record<string, string>> = {
         'common.error': 'Error',
         'common.success': 'Success',
         'common.logout': 'Sign Out',
+        // Error
+        'error.404.title': 'Page Not Found',
+        'error.404.message': 'The requested resource is not available.',
+        'error.return': 'Return to Home',
+
+        // Audit
+        'audit.title': 'Security Audit Dashboard',
+        'audit.subtitle': 'Internal Use Only • Authorized Personnel',
+        'audit.score': 'Global Security Compliance',
+        'audit.blocked': 'Deployment Blocked: Security Risks Detected',
+        'audit.secure': 'System Secure: Ready for Deployment',
+        'audit.params': 'Security Parameters',
+        'audit.health': 'System Health',
+        'audit.logs': 'Audit Logs',
+        'audit.noLogs': 'No logs recorded yet.',
     },
 };
 

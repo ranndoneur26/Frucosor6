@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { AuditService } from '@/lib/audit-service';
 
 // User configuration
 const USERS = {
@@ -89,17 +90,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [authState, isInitialized]);
 
+    // Auto-logout functionality
+    useEffect(() => {
+        if (!authState.isAuthenticated) return;
+
+        const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+        let timeoutId: NodeJS.Timeout;
+
+        const resetTimer = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                AuditService.logAction(authState.username || 'unknown', 'AUTO_LOGOUT', 'Session timed out due to inactivity');
+                logout();
+                alert('Session expired due to inactivity.');
+            }, TIMEOUT_MS);
+        };
+
+        // Events to monitor
+        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+
+        // Initial set
+        resetTimer();
+
+        // Add listeners
+        events.forEach(event => document.addEventListener(event, resetTimer));
+
+        // Cleanup
+        return () => {
+            clearTimeout(timeoutId);
+            events.forEach(event => document.removeEventListener(event, resetTimer));
+        };
+    }, [authState.isAuthenticated, authState.username]);
+
     const login = (username: string, password: string): { success: boolean; error?: string } => {
         const normalizedUsername = username.toLowerCase();
         const user = USERS[normalizedUsername as keyof typeof USERS];
 
         // Check if user exists
         if (!user) {
+            AuditService.logAction(username, 'LOGIN_FAILED', 'User not found');
             return { success: false, error: 'login.error.invalid' };
         }
 
         // Check password
         if (user.password !== password) {
+            AuditService.logAction(username, 'LOGIN_FAILED', 'Invalid password');
             return { success: false, error: 'login.error.invalid' };
         }
 
@@ -122,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // Check access limit
         if (currentAccessCount >= user.maxWeeklyAccess) {
+            AuditService.logAction(username, 'LOGIN_DENIED', 'Weekly access limit reached');
             return { success: false, error: 'login.error.limit' };
         }
 
@@ -137,10 +173,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setAuthState(newState);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
 
+        AuditService.logAction(normalizedUsername, 'LOGIN_SUCCESS', 'User logged in successfully');
+
         return { success: true };
     };
 
     const logout = () => {
+        if (authState.username) {
+            AuditService.logAction(authState.username, 'LOGOUT', 'User logged out');
+        }
         setAuthState({
             isAuthenticated: false,
             username: null,
