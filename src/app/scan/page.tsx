@@ -43,9 +43,21 @@ export default function ScanPage() {
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current;
             const canvas = canvasRef.current;
+            if (video.readyState !== 4) { // HAVE_ENOUGH_DATA
+                console.warn('Video not ready yet');
+                return;
+            }
+
             // Resize to max 800px to avoid Vercel 4.5MB payload limit
             let width = video.videoWidth;
             let height = video.videoHeight;
+
+            if (width === 0 || height === 0) {
+                console.error('Video dimensions are zero');
+                alert('Camera not ready. Please wait a moment and try again.');
+                return;
+            }
+
             const maxDim = 800;
 
             if (width > height && width > maxDim) {
@@ -63,6 +75,11 @@ export default function ScanPage() {
             if (ctx) {
                 ctx.drawImage(video, 0, 0, width, height);
                 const imageData = canvas.toDataURL('image/jpeg', 0.7); // Slightly lower quality for compression
+                console.log('Captured image data length:', imageData.length);
+                if (imageData.length < 1000) {
+                    alert('Error capturing photo (image too small). Please try again.');
+                    return;
+                }
                 setCapturedImage(imageData);
                 stopCamera();
             }
