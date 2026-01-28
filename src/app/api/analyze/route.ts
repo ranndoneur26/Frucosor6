@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Remove data URL prefix if present in image
-        const base64Data = image ? image.replace(/^data:image\/\w+;base64,/, '') : undefined;
+        // Robustly extract base64 data handling various Data URI formats
+        const base64Data = image ? (image.includes(',') ? image.split(',')[1] : image) : undefined;
         console.log('Base64 data length after cleanup:', base64Data?.length || 0);
 
         const result = await unifiedAnalyze({ image: base64Data, text }, lang);
