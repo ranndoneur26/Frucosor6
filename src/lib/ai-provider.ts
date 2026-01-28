@@ -67,10 +67,10 @@ interface Meal {
 export async function unifiedAnalyze(input: { image?: string; text?: string }, lang: string = 'en'): Promise<FoodAnalysisResult> {
     const provider = getProvider();
 
-    // IMPORTANT: For image analysis, always use Google (Gemini) as Perplexity doesn't support images
-    if (input.image && GOOGLE_API_KEY) {
-        console.log('Image detected, using Google Gemini for multimodal analysis');
-        return analyzeWithGoogle(input, lang);
+    // IMPORTANT: For image analysis, use OpenAI GPT-4o as Google has quota exceeded
+    if (input.image && OPENAI_API_KEY) {
+        console.log('Image detected, using OpenAI GPT-4o for multimodal analysis');
+        return analyzeWithOpenAI(input, lang);
     }
 
     if (provider === 'openai') {
@@ -85,62 +85,93 @@ export async function unifiedAnalyze(input: { image?: string; text?: string }, l
 }
 
 export async function unifiedGenerateMenu(userRequest: string, lang: string = 'en'): Promise<MenuPlan> {
-    try {
-        const provider = getProvider();
+    const preferredProvider = getProvider();
+    const providers: AIProviderType[] = [preferredProvider, 'google', 'openai', 'perplexity', 'anthropic'];
+    // Remove duplicates
+    const pList = [...new Set(providers)];
 
-        if (provider === 'openai') {
-            return await generateMenuWithOpenAI(userRequest, lang);
-        } else if (provider === 'anthropic') {
-            return await generateMenuWithAnthropic(userRequest, lang);
-        } else if (provider === 'perplexity') {
-            return await generateMenuWithPerplexity(userRequest, lang);
-        } else {
-            return await generateMenuWithGoogle(userRequest, lang);
+    for (const p of pList) {
+        // Skip fallback if no key is present for that provider (getProvider checks this, but we double check for fallback list)
+        if (p === 'google' && !GOOGLE_API_KEY) continue;
+        if (p === 'openai' && !OPENAI_API_KEY) continue;
+        if (p === 'anthropic' && !ANTHROPIC_API_KEY) continue;
+        if (p === 'perplexity' && !PERPLEXITY_API_KEY) continue;
+
+        try {
+            console.log(`Generating menu with ${p}...`);
+            if (p === 'openai') {
+                return await generateMenuWithOpenAI(userRequest, lang);
+            } else if (p === 'anthropic') {
+                return await generateMenuWithAnthropic(userRequest, lang);
+            } else if (p === 'perplexity') {
+                return await generateMenuWithPerplexity(userRequest, lang);
+            } else {
+                return await generateMenuWithGoogle(userRequest, lang);
+            }
+        } catch (error) {
+            console.error(`Provider ${p} failed for menu generation:`, error);
+            // Continue to next provider
         }
-    } catch (error) {
-        console.error('Unified menu generation error, returning mock menu:', error);
-        return getMockMenu(userRequest);
     }
+
+    console.error('All providers failed for menu generation, returning mock menu.');
+    return getMockMenu(userRequest, lang);
 }
 
-function getMockMenu(userRequest: string): MenuPlan {
+function getMockMenu(userRequest: string, lang: string = 'en'): MenuPlan {
+    const isCa = lang === 'ca';
+    // Helper for translation - Generic to handle strings and arrays
+    const t = <T>(es: T, ca: T, en: T): T => isCa ? ca : (lang === 'es' ? es : en);
+
     return {
-        title: `Menú Seguro - ${userRequest}`,
+        title: t(`Menú Seguro - ${userRequest}`, `Menú Segur - ${userRequest}`, `Safe Menu - ${userRequest}`),
         days: [
             {
-                day: "Día 1",
+                day: t("Día 1", "Dia 1", "Day 1"),
                 meals: {
                     breakfast: {
-                        name: "Quinoa Porridge con Arándanos",
-                        description: "Quinoa cocida con leche sin lactosa, arándanos frescos y canela",
-                        ingredients: ["Quinoa", "Leche sin lactosa", "Arándanos", "Canela"],
+                        name: t("Quinoa Porridge con Arándanos", "Farinetes de Quinoa amb Nabius", "Quinoa Porridge with Blueberries"),
+                        description: t("Quinoa cocida con leche sin lactosa, arándanos frescos y canela", "Quinoa cuita amb llet sense lactosa, nabius frescos i canyella", "Cooked quinoa with lactose-free milk, fresh blueberries, and cinnamon"),
+                        ingredients: t(["Quinoa", "Leche sin lactosa", "Arándanos", "Canela"], ["Quinoa", "Llet sense lactosa", "Nabius", "Canyella"], ["Quinoa", "Lactose-free milk", "Blueberries", "Cinnamon"]) as any,
                         safe: true
                     },
                     lunch: {
-                        name: "Pollo a la Plancha con Arroz",
-                        description: "Pechuga de pollo con arroz basmati y verduras al vapor",
-                        ingredients: ["Pollo", "Arroz basmati", "Zanahorias", "Judías verdes"],
+                        name: t("Pollo a la Plancha con Arroz", "Pollastre a la Planxa amb Arròs", "Grilled Chicken with Rice"),
+                        description: t("Pechuga de pollo con arroz basmati y verduras al vapor", "Pit de pollastre amb arròs basmati i verdures al vapor", "Chicken breast with basmati rice and steamed vegetables"),
+                        ingredients: t(["Pollo", "Arroz basmati", "Zanahorias", "Judías verdes"], ["Pollastre", "Arròs basmati", "Pastanagues", "Mongetes verdes"], ["Chicken", "Basmati rice", "Carrots", "Green beans"]) as any,
                         safe: true
                     },
                     snack: {
-                        name: "Yogur Natural con Nueces",
-                        description: "Yogur sin azúcar con nueces picadas",
-                        ingredients: ["Yogur natural", "Nueces"],
+                        name: t("Yogur Natural con Nueces", "Iogurt Natural amb Nous", "Natural Yogurt with Walnuts"),
+                        description: t("Yogur sin azúcar con nueces picadas", "Iogurt sense sucre amb nous picades", "Sugar-free yogurt with chopped walnuts"),
+                        ingredients: t(["Yogur natural", "Nueces"], ["Iogurt natural", "Nous"], ["Natural yogurt", "Walnuts"]) as any,
                         safe: true
                     },
                     dinner: {
-                        name: "Salmón al Horno con Patatas",
-                        description: "Filete de salmón con patatas asadas y espinacas",
-                        ingredients: ["Salmón", "Patatas", "Espinacas", "Aceite de oliva"],
+                        name: t("Salmón al Horno con Patatas", "Salmó al Forn amb Patates", "Baked Salmon with Potatoes"),
+                        description: t("Filete de salmón con patatas asadas y espinacas", "Filet de salmó amb patates al forn i espinacs", "Salmon fillet with baked potatoes and spinach"),
+                        ingredients: t(["Salmón", "Patatas", "Espinacas", "Aceite de oliva"], ["Salmó", "Patates", "Espinacs", "Oli d'oliva"], ["Salmon", "Potatoes", "Spinach", "Olive oil"]) as any,
                         safe: true
                     }
                 }
             }
         ],
         notes: [
-            "⚠️ NOTA: Este es un menú de ejemplo. La generación con IA puede estar experimentando problemas.",
-            "Para activar la generación personalizada con IA, verifica que tus API keys tengan acceso a los modelos seleccionados.",
-            "Todos los alimentos sugeridos son seguros para intolerancia a fructosa y sorbitol."
+            t(
+                "⚠️ NOTA: Este es un menú de ejemplo. La generación con IA puede estar experimentando problemas.",
+                "⚠️ NOTA: Aquest és un menú d'exemple. La generació amb IA pot estar experimentant problemes.",
+                "⚠️ NOTE: This is a sample menu. AI generation may be experiencing issues."
+            ),
+            t(
+                "Para activar la generación personalizada con IA, verifica que tus API keys tengan acceso a los modelos seleccionados.",
+                "Per activar la generació personalitzada amb IA, verifica que les teves claus API tinguin accés als models seleccionats.",
+                "To enable custom AI generation, verify that your API keys have access to the selected models."
+            ),
+            t(
+                "Todos los alimentos sugeridos son seguros para intolerancia a fructosa y sorbitol.",
+                "Tots els aliments suggerits són segurs per a la intolerància a la fructosa i el sorbitol.",
+                "All suggested foods are safe for fructose and sorbitol intolerance."
+            )
         ]
     };
 }
@@ -161,7 +192,7 @@ function getProvider(): AIProviderType {
 
 // --- GOOGLE (GEMINI) ---
 async function analyzeWithGoogle(input: { image?: string; text?: string }, lang: string): Promise<FoodAnalysisResult> {
-    const model = googleAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = googleAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
     const targetLang = languageMapper[lang] || 'English';
 
     const prompt = `Analyze this food ${input.image ? 'image' : 'description'}: "${input.text || 'food item in the image'}"
@@ -222,6 +253,7 @@ async function generateMenuWithGoogle(userRequest: string, lang: string): Promis
     const targetLang = languageMapper[lang] || 'English';
     const prompt = `Generate a safe menu for fructose/sorbitol intolerance based on: "${userRequest}". 
     CRITICAL: Respond ONLY in ${targetLang}. All names, descriptions and notes must be in ${targetLang}.
+    CRITICAL (Catalan): If language is Catalan, 'Snack' or 'Merienda' MUST be translated as 'Berenar'.
     Respond ONLY with JSON matching the MenuPlan structure.`;
 
     try {
@@ -259,7 +291,7 @@ async function generateMenuWithOpenAI(userRequest: string, lang: string): Promis
     const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-            { role: "system", content: `You are a nutritionist for fructose/sorbitol intolerance. CRITICAL: Respond ONLY in ${targetLang}. Return ONLY JSON.` },
+            { role: "system", content: `You are a nutritionist for fructose/sorbitol intolerance. CRITICAL: Respond ONLY in ${targetLang}. Return ONLY JSON. CRITICAL (Catalan): If targetLang is Catalan, 'Snack' or 'Merienda' MUST be translated as 'Berenar'.` },
             { role: "user", content: `Generate a menu for: ${userRequest}` }
         ],
         response_format: { type: "json_object" }
@@ -339,7 +371,7 @@ async function generateMenuWithPerplexity(userRequest: string, lang: string): Pr
                   "notes": ["...", "..."]
                 }`
             },
-            { role: "user", content: `Generate a safe menu for fructose and sorbitol intolerance in ${targetLang}: ${userRequest}` }
+            { role: "user", content: `Generate a safe menu for fructose and sorbitol intolerance in ${targetLang}: ${userRequest}. CRITICAL: If Catalan, translate 'Snack'/'Merienda' as 'Berenar'.` }
         ]
     });
 
@@ -360,18 +392,33 @@ async function generateMenuWithPerplexity(userRequest: string, lang: string): Pr
 }
 
 export async function unifiedGenerateReport(data: any, lang: string = 'en'): Promise<string> {
-    const provider = getProvider();
+    const preferredProvider = getProvider();
+    const providers: AIProviderType[] = [preferredProvider, 'google', 'openai', 'perplexity'];
+    const pList = [...new Set(providers)];
 
     // Convert data to string representation if it's an object
     const dataString = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
 
-    if (provider === 'openai') {
-        return generateReportWithOpenAI(dataString, lang);
-    } else if (provider === 'perplexity') {
-        return generateReportWithPerplexity(dataString, lang);
-    } else {
-        return generateReportWithGoogle(dataString, lang);
+    for (const p of pList) {
+        if (p === 'google' && !GOOGLE_API_KEY) continue;
+        if (p === 'openai' && !OPENAI_API_KEY) continue;
+        if (p === 'perplexity' && !PERPLEXITY_API_KEY) continue;
+
+        try {
+            console.log(`Generating report with ${p}...`);
+            if (p === 'openai') {
+                return await generateReportWithOpenAI(dataString, lang);
+            } else if (p === 'perplexity') {
+                return await generateReportWithPerplexity(dataString, lang);
+            } else {
+                return await generateReportWithGoogle(dataString, lang);
+            }
+        } catch (error) {
+            console.error(`Provider ${p} failed for report generation:`, error);
+        }
     }
+
+    throw new Error('All AI providers failed to generate the report.');
 }
 
 // --- REPORT GENERATION PROMPT ---

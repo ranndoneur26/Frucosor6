@@ -27,11 +27,13 @@ export async function POST(request: NextRequest) {
         console.log('Analysis result:', JSON.stringify(result).substring(0, 200));
 
         return NextResponse.json(result);
-    } catch (error) {
+    } catch (error: any) {
         console.error('=== ANALYSIS ERROR ===');
-        console.error('Error details:', error);
+        console.error('Error name:', error?.name);
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack?.substring(0, 500));
         return NextResponse.json(
-            { error: 'Failed to analyze food' },
+            { error: `Analysis failed: ${error?.message || 'Unknown error'}` },
             { status: 500 }
         );
     }
