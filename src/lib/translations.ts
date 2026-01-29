@@ -99,6 +99,7 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.planner': 'Planificador',
 
         // Common
+        'common.search': 'Buscar',
         'common.close': 'Cerrar',
         'common.cancel': 'Cancelar',
         'common.confirm': 'Confirmar',
@@ -219,6 +220,7 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.planner': 'Planificador',
 
         // Common
+        'common.search': 'Cercar',
         'common.close': 'Tancar',
         'common.cancel': 'Cancel·lar',
         'common.confirm': 'Confirmar',
@@ -339,6 +341,7 @@ export const translations: Record<Language, Record<string, string>> = {
         'nav.planner': 'Planner',
 
         // Common
+        'common.search': 'Search',
         'common.close': 'Close',
         'common.cancel': 'Cancel',
         'common.confirm': 'Confirm',

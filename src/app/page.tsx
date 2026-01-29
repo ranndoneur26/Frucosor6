@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import BottomNav from "@/components/BottomNav";
-import BarcodeScanner from "@/components/BarcodeScanner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProductByBarcode } from "@/lib/openfoodfacts";
@@ -13,30 +12,9 @@ export default function Home() {
   const router = useRouter();
   const { t, language, setLanguage } = useLanguage();
   const { username, remainingAccess, maxWeeklyAccess, logout } = useAuth();
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleBarcodeScan = async (barcode: string) => {
-    setShowBarcodeScanner(false);
-    setIsSearching(true);
-
-    try {
-      const result = await getProductByBarcode(barcode);
-      if (result.found && result.product) {
-        // Store result and navigate to analysis
-        sessionStorage.setItem('barcodeResult', JSON.stringify(result.product));
-        router.push('/analysis?fromBarcode=true');
-      } else {
-        alert(t('barcode.notFound'));
-      }
-    } catch (error) {
-      console.error('Barcode lookup error:', error);
-      alert(t('common.error'));
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +72,16 @@ export default function Home() {
             onChange={(e) => setSearchQuery(e.target.value)}
             disabled={isSearching}
           />
-          {isSearching && <span className="material-symbols-outlined animate-spin text-primary">sync</span>}
+          {isSearching ? (
+            <span className="material-symbols-outlined animate-spin text-primary">sync</span>
+          ) : (
+            <button
+              type="submit"
+              className="bg-primary text-background-dark font-bold text-xs uppercase px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors ml-2"
+            >
+              {t('common.search')}
+            </button>
+          )}
         </form>
 
         {/* Scan Label */}
@@ -112,16 +99,9 @@ export default function Home() {
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-black/10 rounded-full"></div>
         </div>
 
-        {/* Barcode */}
-        <div
-          onClick={() => setShowBarcodeScanner(true)}
-          className="col-span-2 row-span-2 bg-mondrian-yellow rounded-xl mondrian-border flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-        >
-          <span className="material-symbols-outlined text-black text-4xl">barcode_scanner</span>
-        </div>
 
         {/* Zero Tolerance */}
-        <div className="col-span-2 row-span-3 bg-white dark:bg-zinc-800 rounded-xl mondrian-border p-4 flex flex-col justify-center items-center text-center">
+        <div className="col-span-2 row-span-5 bg-white dark:bg-zinc-800 rounded-xl mondrian-border p-4 flex flex-col justify-center items-center text-center">
           <span className="text-black dark:text-white font-bold text-xs uppercase tracking-tighter leading-tight whitespace-pre-line">{t('home.zeroTolerance')}</span>
           <div className="mt-2 w-full h-1 bg-primary"></div>
         </div>
@@ -188,12 +168,6 @@ export default function Home() {
       <BottomNav />
 
       {/* Barcode Scanner Modal */}
-      {showBarcodeScanner && (
-        <BarcodeScanner
-          onScan={handleBarcodeScan}
-          onClose={() => setShowBarcodeScanner(false)}
-        />
-      )}
     </div>
   );
 }

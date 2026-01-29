@@ -18,10 +18,7 @@ const BottomNav = () => {
                 <span className="material-symbols-outlined font-bold">home</span>
                 <span className="text-[10px] font-medium uppercase">{t('nav.home')}</span>
             </button>
-            <button className="flex flex-col items-center gap-1 text-zinc-400">
-                <span className="material-symbols-outlined">favorite</span>
-                <span className="text-[10px] font-medium uppercase">{t('nav.favorites')}</span>
-            </button>
+
             <button
                 onClick={() => router.push('/planner')}
                 className={`flex flex-col items-center gap-1 ${isActive('/planner') ? 'text-primary' : 'text-zinc-400'}`}
